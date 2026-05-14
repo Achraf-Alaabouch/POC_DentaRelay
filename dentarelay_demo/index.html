@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DentaRelay</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="login-screen" id="loginScreen">
+      <section class="login-panel">
+        <div class="brand login-brand">
+          <div class="mark">DR</div>
+          <div>
+            <h1>DentaRelay</h1>
+            <p>Accès sécurisé à la téléconsultation dentaire</p>
+          </div>
+        </div>
+        <div class="role-grid">
+          <button class="role-card active" type="button" data-role="Infirmière mobile">
+            <strong>Infirmière mobile</strong>
+            <span>Capture, consentement, synchronisation</span>
+          </button>
+          <button class="role-card" type="button" data-role="Dentiste distant">
+            <strong>Dentiste distant</strong>
+            <span>Validation clinique et rapport final</span>
+          </button>
+        </div>
+        <label>Code de démonstration<input id="demoPin" value="2407" inputmode="numeric" /></label>
+        <div class="consent-line">
+          <input type="checkbox" id="consentCheck" checked />
+          <span>Données anonymisées, consentement confirmé pour la démo.</span>
+        </div>
+        <button class="primary login-btn" id="loginBtn">Entrer dans DentaRelay</button>
+        <p class="security-copy">Prototype local: clé ThakaaMed côté serveur, cache chiffré simulé, audit des actions sensibles.</p>
+      </section>
+    </div>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="mark">DR</div>
+          <div>
+            <h1>DentaRelay</h1>
+            <p>Téléconsultation dentaire assistée par IA</p>
+          </div>
+        </div>
+        <nav>
+          <button class="nav-item active" data-view="intake">Intake</button>
+          <button class="nav-item" data-view="queue">Triage</button>
+          <button class="nav-item" data-view="dashboard">Dentiste</button>
+          <button class="nav-item" data-view="assistant">Assistant local</button>
+        </nav>
+        <div class="system-card user-card">
+          <span class="dot live"></span>
+          <strong id="userRole">Session démo</strong>
+          <p id="userAccess">Accès lecture seule jusqu'à validation.</p>
+        </div>
+        <div class="system-card">
+          <span class="dot" id="liveDot"></span>
+          <strong id="liveStatus">Mode démo hors ligne</strong>
+          <p id="facilityText">JSON local chargé, aucun coût.</p>
+        </div>
+        <div class="disclaimer">
+          Prototype de démonstration. Ne remplace pas une consultation avec un dentiste qualifié.
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Mission mobile - Province d'Azilal</p>
+            <h2 id="viewTitle">Intake infirmier</h2>
+          </div>
+          <div class="status-strip">
+            <span id="securityBadge">Vault chiffré local</span>
+            <span id="syncBadge">Synchronisé</span>
+            <span id="caseBadge">Cas DR-2407</span>
+          </div>
+        </header>
+
+        <section class="view active" id="intake">
+          <div class="intake-grid">
+            <section class="panel capture-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Capture terrain</p>
+                  <h3>Radiographie portable</h3>
+                </div>
+                <span class="pill">JPEG &lt; 10 Mo</span>
+              </div>
+              <div class="upload-zone" id="uploadZone">
+                <input type="file" id="fileInput" accept="image/jpeg,image/png" />
+                <div class="upload-icon">+</div>
+                <h4>Glisser une radio ou cliquer pour importer</h4>
+                <p>Le fichier reste local jusqu'à l'envoi au proxy DentaRelay.</p>
+              </div>
+              <div class="actions">
+                <button class="primary" id="loadSampleBtn">Charger le cas démo</button>
+                <button class="secondary" id="analyzeBtn" disabled>Analyser en live</button>
+              </div>
+              <div class="connectivity">
+                <div>
+                  <span>Réseau rural</span>
+                  <strong id="networkState">Intermittent</strong>
+                </div>
+                <div class="signal"><i></i><i></i><i></i><i></i></div>
+              </div>
+            </section>
+
+            <section class="panel patient-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Dossier patient</p>
+                  <h3>Pré-consultation</h3>
+                </div>
+              </div>
+              <div class="form-grid">
+                <label>Nom anonymisé<input id="patientName" value="Patient A-017" /></label>
+                <label>Commune<input id="patientTown" value="Aït M'hamed" /></label>
+                <label>Distance dentiste<input id="distance" value="186 km" /></label>
+                <label>Motif<select id="reason"><option>Douleur persistante</option><option>Contrôle scolaire</option><option>Gonflement</option></select></label>
+              </div>
+              <div class="timeline">
+                <div><span></span>Radio capturée</div>
+                <div><span></span>Analyse IA</div>
+                <div><span></span>Validation distante</div>
+                <div><span></span>Retour patient</div>
+              </div>
+              <div class="security-stack">
+                <div><strong>Consentement</strong><span id="consentStatus">Confirmé</span></div>
+                <div><strong>Anonymisation</strong><span>ID patient pseudonymisé</span></div>
+                <div><strong>Cache</strong><span>AES-256 simulé en local</span></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="queue">
+          <div class="queue-layout">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Queue intelligente</p>
+                  <h3>Priorité clinique</h3>
+                </div>
+                <span class="pill alert" id="urgentCount">0 haute</span>
+              </div>
+              <div class="case-list" id="caseList"></div>
+            </section>
+            <section class="panel map-panel">
+              <p class="eyebrow">Tournée mobile</p>
+              <h3>Synchronisation différée</h3>
+              <div class="route-map">
+                <span style="left:15%;top:68%"></span>
+                <span style="left:38%;top:45%"></span>
+                <span style="left:63%;top:58%"></span>
+                <span style="left:80%;top:30%"></span>
+              </div>
+              <div class="metric-row">
+                <div><strong id="waitingCount">7</strong><span>patients</span></div>
+                <div><strong>24h</strong><span>retour cible</span></div>
+                <div><strong>0</strong><span>coût LLM</span></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="dashboard">
+          <div class="dashboard-grid">
+            <section class="panel viewer-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Radio annotée</p>
+                  <h3 id="viewerTitle">Cas non chargé</h3>
+                </div>
+                <div class="viewer-tabs">
+                  <button class="tab active" data-layer="boxes">Boxes</button>
+                  <button class="tab" data-layer="image">Image</button>
+                </div>
+              </div>
+              <div class="xray-frame">
+                <img id="xrayImage" src="/sample-xray" alt="Radiographie dentaire" />
+                <svg id="overlaySvg" viewBox="0 0 2024 1152" preserveAspectRatio="none"></svg>
+              </div>
+            </section>
+            <section class="panel findings-panel">
+              <div class="score-card" id="scoreCard">
+                <p>Score urgence</p>
+                <strong>--</strong>
+                <span>En attente d'analyse</span>
+              </div>
+              <div class="findings-list" id="findingsList"></div>
+            </section>
+            <section class="panel report-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Rapport bilingue</p>
+                  <h3>Validation praticien</h3>
+                </div>
+                <button class="secondary compact" id="validateBtn">Valider</button>
+              </div>
+              <div class="report-tabs">
+                <button class="tab active" data-report="fr">Français</button>
+                <button class="tab" data-report="ar">العربية</button>
+              </div>
+              <textarea id="reportText"></textarea>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="assistant">
+          <div class="assistant-layout">
+            <section class="panel chat-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Assistant local</p>
+                  <h3>Réponses depuis le cache</h3>
+                </div>
+                <span class="pill">Hors ligne</span>
+              </div>
+              <div class="quick-prompts" id="quickPrompts">
+                <button type="button" data-prompt="Pourquoi ce cas est-il prioritaire ?">Priorité</button>
+                <button type="button" data-prompt="Quelles dents ont des caries ?">Caries</button>
+                <button type="button" data-prompt="Y a-t-il un risque infectieux ou un abcès ?">Infection</button>
+                <button type="button" data-prompt="Que doit faire l'infirmière maintenant ?">Infirmière</button>
+                <button type="button" data-prompt="Quelles questions poser au patient ?">Questions</button>
+                <button type="button" data-prompt="Est-ce sécurisé et conforme pour la démo ?">Sécurité</button>
+                <button type="button" data-prompt="Génère un résumé pour le dentiste">Résumé</button>
+                <button type="button" data-prompt="اشرح الحالة بالعربية">العربية</button>
+              </div>
+              <div class="chat-log" id="chatLog"></div>
+              <form class="chat-form" id="chatForm">
+                <input id="chatInput" placeholder="Ex: quelles dents sont prioritaires ?" />
+                <button class="primary">Envoyer</button>
+              </form>
+            </section>
+            <section class="panel knowledge-panel">
+              <p class="eyebrow">Sources locales</p>
+              <h3>Cache DentaRelay</h3>
+              <div id="knowledgeList"></div>
+              <div class="audit-panel">
+                <p class="eyebrow">Audit</p>
+                <h3>Journal local</h3>
+                <div id="auditLog"></div>
+              </div>
+              <div class="assistant-note">
+                Le chatbot n'appelle aucun LLM externe. Il recherche dans le JSON ThakaaMed en cache et formule une réponse structurée.
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>
