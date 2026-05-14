@@ -3,8 +3,11 @@ const state = {
   findings: [],
   urgency: null,
   reportLang: "fr",
+  patientLang: "fr",
   uploadedFile: null,
   role: "Infirmière mobile",
+  ollamaReady: false,
+  ollamaModel: "llama3:latest",
   audit: [],
 };
 
@@ -31,6 +34,20 @@ const demoCases = [
 
 function label(name, lang = "fr") {
   return translations[name]?.[lang] || name;
+}
+
+function plainLabel(name, lang = "fr") {
+  const key = name.toLowerCase();
+  const labels = {
+    caries: { fr: "zone qui peut correspondre à une carie", ar: "منطقة قد تكون تسوسا", en: "area that may be a cavity" },
+    "periapical lesion": { fr: "signe possible d'inflammation près de la racine", ar: "علامة محتملة على التهاب قرب جذر السن", en: "possible inflammation near the tooth root" },
+    "vertical bone loss": { fr: "perte osseuse autour de la dent", ar: "نقص في العظم حول السن", en: "bone loss around the tooth" },
+    "horizontal bone loss": { fr: "perte osseuse autour de la dent", ar: "نقص في العظم حول السن", en: "bone loss around the tooth" },
+    "impacted tooth": { fr: "dent qui ne sort pas normalement", ar: "سن لا يظهر بشكل طبيعي", en: "tooth that is not erupting normally" },
+    "root-canal filling": { fr: "ancien traitement de racine visible", ar: "علاج سابق لجذر السن ظاهر في الصورة", en: "visible previous root treatment" },
+    "filling-normal margin": { fr: "ancienne obturation visible", ar: "حشوة سابقة ظاهرة", en: "visible previous filling" },
+  };
+  return labels[key]?.[lang] || label(name, lang);
 }
 
 function setView(id) {
@@ -112,6 +129,8 @@ function setAnalysis(analysis, source = "Cas demo local") {
   renderReport();
   renderQueue();
   renderKnowledge();
+  renderArtifacts();
+  renderPatientExplainer();
   seedChat();
   addAudit("Analyse chargée", `${source}, ${state.findings.length} observations`);
 }
@@ -211,6 +230,103 @@ function renderReport() {
   text.classList.toggle("rtl", state.reportLang === "ar");
 }
 
+function downloadReportPdf() {
+  const report = $("reportText").value || "";
+  const name = ($("patientName").value || "patient").replace(/[^a-z0-9_\- ]/gi, "_");
+  const date = new Date().toISOString().slice(0, 10);
+  const filename = `${name}_${date}_DentaRelay_report.pdf`;
+  if (window.jspdf && window.jspdf.jsPDF) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(12);
+    const margin = 10;
+    const pageWidth = doc.internal.pageSize.getWidth() - margin * 2;
+    const lines = doc.splitTextToSize(report, pageWidth);
+    doc.text(lines, margin, 20);
+    doc.save(filename);
+  } else {
+    const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename.replace(/\.pdf$/, ".txt");
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  }
+  addAudit("Téléchargement rapport", filename);
+}
+
+function renderArtifacts() {
+  const analysis = state.analysis || {};
+  const drawn = analysis.draw_image || "";
+  const viewer = analysis.embeded_link || "";
+  const report = analysis.embeded_report_link || "";
+  $("drawnImage").src = drawn;
+  const link = (href, text) => href
+    ? `<a class="artifact-link" href="${href}" target="_blank" rel="noreferrer">${text}</a>`
+    : `<span class="artifact-link disabled">${text} indisponible</span>`;
+  $("artifactStrip").innerHTML = [
+    link(drawn, "PNG annoté"),
+    link(viewer, "Viewer intégré"),
+    link(report, "Rapport PDF"),
+  ].join("");
+}
+
+function patientExplanation(lang = "fr") {
+  const top = state.findings.slice(0, 6);
+  const caries = state.findings.filter((f) => f.name.toLowerCase().includes("caries")).length;
+  const infection = state.findings.filter((f) => f.name.toLowerCase().includes("periapical")).length;
+  const bone = state.findings.filter((f) => f.name.toLowerCase().includes("bone loss")).length;
+  const topLine = top.map((f) => {
+    const pct = Math.round(f.probability);
+    if (lang === "ar") return `السن ${f.tooth}: ${plainLabel(f.name, "ar")} (${pct}%)`;
+    if (lang === "en") return `tooth ${f.tooth}: ${plainLabel(f.name, "en")} (${pct}%)`;
+    return `dent ${f.tooth}: ${plainLabel(f.name)} (${pct}%)`;
+  }).join(lang === "ar" ? "، " : "; ");
+
+  if (lang === "ar") {
+    return [
+      `هذه قراءة أولية لصورة الأسنان الخاصة بملف ${$("patientName").value}.`,
+      `درجة الأولوية: ${state.urgency.title} (${state.urgency.score}/100).`,
+      `وجد النظام ${state.findings.length} ملاحظة، منها ${caries} منطقة قد تكون تسوسا، ${infection} علامة التهاب قرب الجذر، و ${bone} ملاحظة مرتبطة بالعظم.`,
+      top.length ? `أهم النقاط التي يجب أن يراجعها طبيب الأسنان: ${topLine}.` : "لا توجد ملاحظات رئيسية في الملف الحالي.",
+      "هذا ليس تشخيصا نهائيا ولا وصفة علاج. طبيب الأسنان هو من يؤكد النتيجة بعد الفحص."
+    ].join("\n\n");
+  }
+
+  if (lang === "en") {
+    return [
+      `This is a simple explanation of ${$("patientName").value}'s dental X-ray.`,
+      `Current priority: ${state.urgency.title} (${state.urgency.score}/100).`,
+      `The AI found ${state.findings.length} observations, including ${caries} possible cavity area(s), ${infection} possible root inflammation sign(s), and ${bone} bone-level observation(s).`,
+      top.length ? `Main points for the dentist to check: ${topLine}.` : "There are no major observations in the current file.",
+      "This is not a final diagnosis or a treatment prescription. A qualified dentist must confirm it clinically."
+    ].join("\n\n");
+  }
+
+  return [
+    `Voici une explication simple de la radiographie de ${$("patientName").value}.`,
+    `Priorité actuelle: ${state.urgency.title} (${state.urgency.score}/100).`,
+    `L'IA a repéré ${state.findings.length} observations, dont ${caries} zone(s) pouvant correspondre à une carie, ${infection} signe(s) possible(s) d'inflammation près d'une racine, et ${bone} observation(s) liées au niveau osseux.`,
+    top.length ? `Points principaux à vérifier par le dentiste: ${topLine}.` : "Aucune observation majeure n'est présente dans le dossier courant.",
+    "Ce n'est pas un diagnostic final ni une prescription. Un dentiste qualifié doit confirmer avec l'examen clinique."
+  ].join("\n\n");
+}
+
+function renderPatientExplainer() {
+  const summary = $("patientSummary");
+  summary.textContent = patientExplanation(state.patientLang);
+  summary.classList.toggle("rtl", state.patientLang === "ar");
+  const evidence = state.findings.slice(0, 6);
+  $("citationList").innerHTML = evidence.map((f) => `
+    <div class="citation-item">
+      <strong>Dent ${f.tooth} · ${Math.round(f.probability)}%</strong>
+      <span>${label(f.name)} · ${recommendationFor(f)}</span>
+    </div>
+  `).join("");
+}
+
 function renderQueue() {
   const mainLevel = state.urgency?.level || "medium";
   const cases = [
@@ -233,11 +349,11 @@ function renderKnowledge() {
   const topEvidence = state.findings.slice(0, 4).map((f) => `Dent ${f.tooth}: ${label(f.name)} ${Math.round(f.probability)}%`).join(" · ");
   const items = [
     ["JSON ThakaaMed", `${state.findings.length} observations indexees par dent`],
-    ["Rapport FR/AR", "Genere localement, sans API payante"],
+    ["Rapport FR/AR", "Genere localement depuis le dossier"],
     ["Triage", `Priorite ${state.urgency.title.toLowerCase()} fondee sur caries, lesions et perte osseuse`],
     ["Preuves clés", topEvidence || "Aucune observation chargee"],
     ["Sécurité", "API key côté serveur, consentement trace, audit local, données anonymisées"],
-    ["Cache offline", "Disponible meme sans connexion pendant la tournee"],
+    ["Ollama", state.ollamaReady ? `Assistant local via ${state.ollamaModel}` : "Fallback local si Ollama est indisponible"],
   ];
   $("knowledgeList").innerHTML = items.map(([a, b]) => `<div class="knowledge-item"><strong>${a}</strong><span>${b}</span></div>`).join("");
 }
@@ -445,15 +561,49 @@ function addMessage(role, payload) {
   }
   $("chatLog").appendChild(div);
   $("chatLog").scrollTop = $("chatLog").scrollHeight;
+  return div;
 }
 
 function seedChat() {
   $("chatLog").innerHTML = "";
   const top = state.findings.slice(0, 3);
   addMessage("bot", answerWithSources(
-    `Cas charge. Je fonctionne hors ligne a partir du cache DentaRelay.\nPriorite actuelle: ${state.urgency.title} (${state.urgency.score}/100).\nJe peux expliquer l'urgence, citer les detections par dent, proposer une synthese FR/AR, ou aider le dentiste a valider le rapport.`,
+    `Cas charge. ${state.ollamaReady ? `Je reponds avec Ollama (${state.ollamaModel}) en local.` : "Ollama n'est pas detecte, je garde le fallback local."}\nPriorite actuelle: ${state.urgency.title} (${state.urgency.score}/100).\nJe peux expliquer l'urgence, citer les detections par dent, proposer une synthese FR/AR, ou aider le dentiste a valider le rapport.`,
     top
   ));
+}
+
+function chatContext() {
+  return {
+    patient_name: $("patientName").value,
+    town: $("patientTown").value,
+    distance: $("distance").value,
+    reason: $("reason").value,
+    urgency_title: state.urgency?.title || "Non calculee",
+    urgency_score: state.urgency?.score || 0,
+    lesions: state.urgency?.lesions || 0,
+    caries: state.urgency?.caries || 0,
+    bone_loss: state.urgency?.bone || 0,
+    findings: state.findings.slice(0, 24).map((f) => ({
+      tooth: f.tooth,
+      name: f.name,
+      name_fr: label(f.name),
+      probability: f.probability,
+      icd: f.icd,
+      recommendation: recommendationFor(f),
+    })),
+  };
+}
+
+async function askOllama(question) {
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, context: chatContext() }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Ollama indisponible");
+  return answerWithSources(data.answer, state.findings.slice(0, 5), isArabic(data.answer));
 }
 
 async function loadSample() {
@@ -513,13 +663,23 @@ function bindEvents() {
   document.querySelectorAll(".viewer-tabs .tab").forEach((btn) => btn.addEventListener("click", () => {
     document.querySelectorAll(".viewer-tabs .tab").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
-    $("overlaySvg").style.display = btn.dataset.layer === "boxes" ? "block" : "none";
+    const layer = btn.dataset.layer;
+    $("xrayImage").style.display = layer === "drawn" ? "none" : "block";
+    $("drawnImage").style.display = layer === "drawn" ? "block" : "none";
+    $("overlaySvg").style.display = layer === "boxes" ? "block" : "none";
   }));
   document.querySelectorAll(".report-tabs .tab").forEach((btn) => btn.addEventListener("click", () => {
     document.querySelectorAll(".report-tabs .tab").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     state.reportLang = btn.dataset.report;
     renderReport();
+  }));
+  document.querySelectorAll(".patient-tabs .tab").forEach((btn) => btn.addEventListener("click", () => {
+    document.querySelectorAll(".patient-tabs .tab").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    state.patientLang = btn.dataset.patientLang;
+    renderPatientExplainer();
+    addAudit("Langue patient", state.patientLang.toUpperCase());
   }));
   $("loadSampleBtn").addEventListener("click", loadSample);
   $("analyzeBtn").addEventListener("click", analyzeLive);
@@ -531,19 +691,69 @@ function bindEvents() {
     $("uploadZone").querySelector("p").textContent = `${Math.round(file.size / 1024)} Ko prets pour compression et synchronisation.`;
     $("analyzeBtn").disabled = false;
   });
+  ["patientName", "patientTown", "distance", "reason"].forEach((id) => {
+    $(id).addEventListener("input", () => {
+      if (!state.analysis) return;
+      $("viewerTitle").textContent = `${$("patientName").value} - ${state.findings.length} observations`;
+      renderReport();
+      renderQueue();
+      renderPatientExplainer();
+    });
+  });
   $("validateBtn").addEventListener("click", () => {
     $("syncBadge").textContent = "Diagnostic valide";
     $("validateBtn").textContent = "Validé";
     addAudit("Rapport validé", "Conclusion praticien prête à renvoyer");
   });
-  $("chatForm").addEventListener("submit", (event) => {
+  $("downloadPdfBtn").addEventListener("click", downloadReportPdf);
+  $("speakPatientBtn").addEventListener("click", () => {
+    if (!("speechSynthesis" in window)) {
+      alert("Lecture audio indisponible dans ce navigateur.");
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance($("patientSummary").textContent);
+    utterance.lang = state.patientLang === "ar" ? "ar" : state.patientLang === "en" ? "en-US" : "fr-FR";
+    window.speechSynthesis.speak(utterance);
+    addAudit("Lecture patient", state.patientLang.toUpperCase());
+  });
+  $("copyPatientBtn").addEventListener("click", async () => {
+    const text = $("patientSummary").textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      $("copyPatientBtn").textContent = "Copié";
+      setTimeout(() => { $("copyPatientBtn").textContent = "Copier"; }, 1300);
+      addAudit("Résumé copié", state.patientLang.toUpperCase());
+    } catch {
+      alert(text);
+    }
+  });
+  $("chatForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const q = $("chatInput").value.trim();
     if (!q) return;
+    const input = $("chatInput");
+    const button = $("chatForm").querySelector("button");
     addMessage("user", q);
-    addMessage("bot", answerQuestion(q));
+    const pending = addMessage("bot", answerWithSources(`Ollama (${state.ollamaModel}) reflechit...`, state.findings.slice(0, 3)));
     addAudit("Question assistant", q.slice(0, 70));
-    $("chatInput").value = "";
+    input.value = "";
+    input.disabled = true;
+    button.disabled = true;
+    try {
+      const answer = await askOllama(q);
+      pending.remove();
+      addMessage("bot", answer);
+      addAudit("Réponse Ollama", state.ollamaModel);
+    } catch (err) {
+      pending.remove();
+      addMessage("bot", answerQuestion(q));
+      addAudit("Fallback assistant", err.message.slice(0, 70));
+    } finally {
+      input.disabled = false;
+      button.disabled = false;
+      input.focus();
+    }
   });
 }
 
@@ -552,10 +762,18 @@ async function init() {
   renderQueue();
   try {
     const cfg = await fetch("/api/config").then((r) => r.json());
+    state.ollamaReady = Boolean(cfg.ollama_ready);
+    state.ollamaModel = cfg.ollama_model || state.ollamaModel;
     if (cfg.live_ready) {
       $("liveDot").classList.add("live");
       $("liveStatus").textContent = "Mode live pret";
       $("facilityText").textContent = `Proxy local connecte a ${cfg.facility_code}.`;
+    }
+    if (state.ollamaReady) {
+      $("liveStatus").textContent = cfg.live_ready ? "Live + Ollama prets" : "Ollama local pret";
+      $("facilityText").textContent = cfg.live_ready
+        ? `ThakaaMed ${cfg.facility_code}, assistant ${state.ollamaModel}.`
+        : `Assistant local connecte a ${state.ollamaModel}.`;
     }
   } catch {}
   await loadSample();

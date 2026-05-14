@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+.eggs/
+.python-version
+venv/
+.venv/
+env/
+ENV/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+# Virtualenv
+.idea/
+.vscode/
+*.swp
+.DS_Store
+.env
+# Byte-compiled / optimized / DLL files
+*.pyc
+*.pyo
+*.pyd
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+# Test
+.pytest_cache/
+# Logs
+*.log
+# Node
+node_modules/
+# macOS
+*.DS_Store
+# Coverage
+htmlcov/
+.coverage
+coverage.xml
+# Jupyter
+.ipynb_checkpoints/
+# Local database
+*.db
+# Ignore local secrets
+secrets.json
+# Ignore tessdata if present
+tessdata/

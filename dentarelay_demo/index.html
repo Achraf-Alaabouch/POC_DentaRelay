@@ -147,21 +147,6 @@
               </div>
               <div class="case-list" id="caseList"></div>
             </section>
-            <section class="panel map-panel">
-              <p class="eyebrow">Tournée mobile</p>
-              <h3>Synchronisation différée</h3>
-              <div class="route-map">
-                <span style="left:15%;top:68%"></span>
-                <span style="left:38%;top:45%"></span>
-                <span style="left:63%;top:58%"></span>
-                <span style="left:80%;top:30%"></span>
-              </div>
-              <div class="metric-row">
-                <div><strong id="waitingCount">7</strong><span>patients</span></div>
-                <div><strong>24h</strong><span>retour cible</span></div>
-                <div><strong>0</strong><span>coût LLM</span></div>
-              </div>
-            </section>
           </div>
         </section>
 
@@ -176,12 +161,15 @@
                 <div class="viewer-tabs">
                   <button class="tab active" data-layer="boxes">Boxes</button>
                   <button class="tab" data-layer="image">Image</button>
+                  <button class="tab" data-layer="drawn">ThakaaMed</button>
                 </div>
               </div>
               <div class="xray-frame">
                 <img id="xrayImage" src="/sample-xray" alt="Radiographie dentaire" />
+                <img id="drawnImage" alt="Radiographie annotée ThakaaMed" />
                 <svg id="overlaySvg" viewBox="0 0 2024 1152" preserveAspectRatio="none"></svg>
               </div>
+              <div class="artifact-strip" id="artifactStrip"></div>
             </section>
             <section class="panel findings-panel">
               <div class="score-card" id="scoreCard">
@@ -198,12 +186,32 @@
                   <h3>Validation praticien</h3>
                 </div>
                 <button class="secondary compact" id="validateBtn">Valider</button>
+                <button class="secondary compact" id="downloadPdfBtn">Télécharger PDF</button>
               </div>
               <div class="report-tabs">
                 <button class="tab active" data-report="fr">Français</button>
                 <button class="tab" data-report="ar">العربية</button>
               </div>
               <textarea id="reportText"></textarea>
+            </section>
+            <section class="panel patient-explainer-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Explication patient</p>
+                  <h3>Résumé clair avec preuves</h3>
+                </div>
+                <div class="patient-actions">
+                  <button class="secondary compact" id="speakPatientBtn">Écouter</button>
+                  <button class="secondary compact" id="copyPatientBtn">Copier</button>
+                </div>
+              </div>
+              <div class="patient-tabs">
+                <button class="tab active" data-patient-lang="fr">Français</button>
+                <button class="tab" data-patient-lang="ar">العربية</button>
+                <button class="tab" data-patient-lang="en">English</button>
+              </div>
+              <div class="patient-summary" id="patientSummary"></div>
+              <div class="citation-list" id="citationList"></div>
             </section>
           </div>
         </section>
@@ -214,9 +222,9 @@
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">Assistant local</p>
-                  <h3>Réponses depuis le cache</h3>
+                  <h3>Réponses via Ollama</h3>
                 </div>
-                <span class="pill">Hors ligne</span>
+                <span class="pill">Ollama local</span>
               </div>
               <div class="quick-prompts" id="quickPrompts">
                 <button type="button" data-prompt="Pourquoi ce cas est-il prioritaire ?">Priorité</button>
@@ -244,13 +252,14 @@
                 <div id="auditLog"></div>
               </div>
               <div class="assistant-note">
-                Le chatbot n'appelle aucun LLM externe. Il recherche dans le JSON ThakaaMed en cache et formule une réponse structurée.
+                Le chatbot appelle Ollama sur cette machine et garde un fallback local si le modèle est indisponible.
               </div>
             </section>
           </div>
         </section>
       </main>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>
