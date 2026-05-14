@@ -11,7 +11,28 @@ const state = {
   audit: [],
 };
 
+const SESSION_KEY = "dentarelay_session";
+
 const $ = (id) => document.getElementById(id);
+
+function getStoredSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function applySession(user) {
+  if (!user || !user.role) return false;
+  state.role = user.role;
+  $("loginScreen").classList.add("hidden");
+  $("userRole").textContent = user.displayName ? `${user.displayName} · ${user.role}` : user.role;
+  $("userAccess").textContent = user.role.includes("Dentiste") ? "Peut valider et modifier les rapports." : "Peut capturer, synchroniser et demander avis.";
+  $("consentStatus").textContent = "Confirme";
+  return true;
+}
 
 const translations = {
   "Caries": { fr: "Carie", ar: "تسوس" },
@@ -648,6 +669,15 @@ function bindEvents() {
   }));
   $("loginBtn").addEventListener("click", () => {
     state.role = document.querySelector(".role-card.active")?.dataset.role || "Session démo";
+    localStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({
+        username: "demo",
+        displayName: "Utilisateur demo",
+        role: state.role,
+        loginAt: new Date().toISOString(),
+      })
+    );
     $("loginScreen").classList.add("hidden");
     $("userRole").textContent = state.role;
     $("userAccess").textContent = state.role.includes("Dentiste") ? "Peut valider et modifier les rapports." : "Peut capturer, synchroniser et demander avis.";
@@ -759,6 +789,7 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  applySession(getStoredSession());
   renderQueue();
   try {
     const cfg = await fetch("/api/config").then((r) => r.json());

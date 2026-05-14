@@ -258,6 +258,10 @@ class Handler(BaseHTTPRequestHandler):
             "/": APP_DIR / "index.html",
             "/app.js": APP_DIR / "app.js",
             "/styles.css": APP_DIR / "styles.css",
+            "/auth.css": APP_DIR / "auth.css",
+            "/auth.js": APP_DIR / "auth.js",
+            "/auth-medecin.html": APP_DIR / "auth-medecin.html",
+            "/auth-infirmier.html": APP_DIR / "auth-infirmier.html",
             "/sample-analysis": ROOT / "examples" / "sample_v23_analysis.json",
             "/sample-xray": ROOT / "data" / "samples" / "panoramic" / "panoramic_001.jpg",
         }
