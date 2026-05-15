@@ -2,10 +2,6 @@
 
 This folder is the **hackathon hand-off bundle**.
 
-The canonical guide is available in **two languages** — pick whichever you prefer; both are identical in content:
-
-- 🇫🇷 **[`HACKATHON_GUIDE_FR.md`](HACKATHON_GUIDE_FR.md)** / **[`.docx`](HACKATHON_GUIDE_FR.docx)** — French
-- 🇬🇧 **[`HACKATHON_GUIDE_EN.md`](HACKATHON_GUIDE_EN.md)** / **[`.docx`](HACKATHON_GUIDE_EN.docx)** — English
 
 > 🌍 **The API itself is multilingual** — see §4 of either guide. The `/en/`, `/fr/`, `/ar/`, `/tr/`, `/de/`, `/nl/`, `/pt/`, `/ru/`, `/es/`, `/uz/` segment in the URL controls only the **language of the response labels**. Detection is identical across all languages, which makes multilingual UX (e.g. French + Arabic + English in Morocco) essentially free — submit once, GET in as many languages as you want.
 
