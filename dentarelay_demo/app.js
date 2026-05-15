@@ -589,7 +589,7 @@ function seedChat() {
   $("chatLog").innerHTML = "";
   const top = state.findings.slice(0, 3);
   addMessage("bot", answerWithSources(
-    `Cas charge. ${state.ollamaReady ? `Je reponds avec Ollama (${state.ollamaModel}) en local.` : "Ollama n'est pas detecte, je garde le fallback local."}\nPriorite actuelle: ${state.urgency.title} (${state.urgency.score}/100).\nJe peux expliquer l'urgence, citer les detections par dent, proposer une synthese FR/AR, ou aider le dentiste a valider le rapport.`,
+    `Je suis votre assistant médical.\nPriorite actuelle: ${state.urgency.title} (${state.urgency.score}/100).\nJe peux expliquer l'urgence, citer les detections par dent, proposer une synthese FR/AR, ou aider le dentiste a valider le rapport.`,
     top
   ));
 }
