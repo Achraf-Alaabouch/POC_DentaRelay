@@ -1,3 +1,4 @@
+<img width="1536" height="1024" alt="tswira" src="https://github.com/user-attachments/assets/f2c71d70-0265-4ca0-af4e-666753f4ea72" />
 # Hackathon MedConnect — `aiv4_demo/`
 
 This folder is the **hackathon hand-off bundle**.
